@@ -1,52 +1,45 @@
-# Import necessary libraries
-import numpy as np
+# Import the necessary libraries
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
+from scipy.stats import norm
 
-# Load the automobile sales dataset
-df = pd.read_csv("automobile_sales.csv")
+# Read data from CSV file
+data = pd.read_csv('data9.csv', header=None, names=['Salary'])
+salaries = data['Salary']
 
-# Compute summary statistics using numpy and pandas
-summary_stats = df.describe()
+print(data.describe())
 
-# Set up the matplotlib figure and axes for subplots
-fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
-fig.suptitle("Automobile Sales Insights\nStudent Name: Athulya Sabu\nStudent ID: 22082059", fontsize=16)
+# Fit a normal distribution to the data
+fit_params = norm.fit(salaries)
 
-# Plot 1: Bar plot of total sales per product line
-sns.barplot(x="PRODUCTLINE", y="SALES", data=df, ax=axes[0, 0])
-axes[0, 0].set_title("Total Sales per Product Line")
+# Generate PDF values using the fit parameters
+pdf_values = norm.pdf(salaries, *fit_params)
 
-# Tilt the x-axis labels
-axes[0, 0].tick_params(axis='x', rotation=45)
+# Plot histogram of salaries
+plt.hist(salaries, bins=30, density=True, alpha=0.6, color='g', label='Histogram of Salaries')
 
-# Plot 2: Line plot of quantity ordered over time
-df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
-df['MonthYear'] = df['ORDERDATE'].dt.to_period('M')
-monthly_quantity = df.groupby('MonthYear')['QUANTITYORDERED'].sum()
-monthly_quantity.plot(ax=axes[0, 1], marker='o', linestyle='-')
-axes[0, 1].set_title("Monthly Quantity Ordered Over Time")
+# Plot the PDF curve using the fitted parameters
+xmin, xmax = plt.xlim()
+x = np.linspace(xmin, xmax, 1000000)
+p = norm.pdf(x, *fit_params)
+plt.plot(x, p, 'k', linewidth=2, label='PDF of salaries')
 
-# Add some gap between the top and bottom plots
-fig.subplots_adjust(hspace=0.65)
+# Add labels, title, and legend
+plt.xlabel('Annual Salary (Euros)')
+plt.ylabel('Probability Density')
+plt.title('Salary Distribution')
+plt.legend()
 
-# Plot 3: Box plot of deal size distribution
-sns.boxplot(x="DEALSIZE", y="SALES", data=df, ax=axes[1, 0])
-axes[1, 0].set_title("Deal Size Distribution")
+# Calculate the mean using trapezoidal rule for numerical integration
+mean_salary = np.trapz(x*p, x)
 
-# Plot 4: Count plot of order status
-sns.countplot(x="STATUS", data=df, ax=axes[1, 1])
-axes[1, 1].set_title("Order Status Count")
+# Calculate X from the PDF
+X = norm.cdf(1.2 * mean_salary, *fit_params) - norm.cdf(0.8 * mean_salary, *fit_params)
 
-# Tilt the x-axis labels
-axes[0, 0].tick_params(axis='x', rotation=45)
+# Annotate mean and X on the graph at specified coordinates
+plt.annotate(f'$W$: {mean_salary:.2f} Euros', xy=(0.45, 0.7), xycoords='axes fraction')
+plt.annotate(f'X: {X:.2f}', xy=(0.45, 0.6), xycoords='axes fraction')
 
-# Add explanation texts
-axes[0, 0].text(0.5, -0.3, "Sales distribution across product lines", ha="center", transform=axes[0, 0].transAxes)
-axes[0, 1].text(0.5, -0.3, "Monthly variation in quantity ordered", ha="center", transform=axes[0, 1].transAxes)
-axes[1, 0].text(0.5, -0.3, "Sales distribution based on deal size", ha="center", transform=axes[1, 0].transAxes)
-axes[1, 1].text(0.5, -0.3, "Distribution of order statuses", ha="center", transform=axes[1, 1].transAxes)
-
-# Save the infographic as a PNG file
-plt.savefig("22082059.png", dpi=300)
+# Show the plot
+plt.show()
